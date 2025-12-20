@@ -4,118 +4,195 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Resume Analyzer</title>
+    <title>SECURE TERMINAL // RESUME_AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --terminal-green: #33ff00;
+            --terminal-bg: #0d0d0d;
+            --glow: 0 0 10px rgba(51, 255, 0, 0.7);
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f4f9;
-            color: #333;
+            background-color: var(--terminal-bg);
+            color: var(--terminal-green);
+            font-family: 'VT323', monospace;
             margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
+            padding: 2rem;
+            height: 100vh;
+            overflow: hidden;
+            box-sizing: border-box;
+            text-transform: uppercase;
+        }
+
+        /* CRT Scanline Effect */
+        body::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
         }
 
         .container {
-            background-color: white;
-            padding: 2.5rem;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 600px;
+            max-width: 800px;
+            margin: 0 auto;
+            border: 2px solid var(--terminal-green);
+            padding: 2rem;
+            box-shadow: var(--glow);
+            position: relative;
+            z-index: 3;
+            background: rgba(0, 20, 0, 0.9);
         }
 
         h1 {
-            color: #2c3e50;
             text-align: center;
+            font-size: 3rem;
             margin-bottom: 2rem;
+            text-shadow: var(--glow);
+            border-bottom: 1px dashed var(--terminal-green);
+            padding-bottom: 10px;
         }
 
         .step {
             margin-bottom: 2rem;
-            padding-bottom: 2rem;
-            border-bottom: 1px solid #eee;
+            opacity: 0.5;
+            transition: opacity 0.5s;
         }
 
-        .step:last-child {
-            border-bottom: none;
+        .step.active {
+            opacity: 1;
         }
 
-        h3 {
-            margin-top: 0;
-            color: #34495e;
-        }
-
-        /* Form Elements */
         label {
             display: block;
-            margin-bottom: 0.5rem;
-            font-weight: bold;
+            font-size: 1.5rem;
+            margin-bottom: 10px;
         }
 
-        input[type="file"],
-        textarea {
-            width: 100%;
+        /* Custom File Input */
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-label {
+            border: 1px dashed var(--terminal-green);
             padding: 10px;
-            border: 2px solid #ddd;
-            border-radius: 6px;
-            box-sizing: border-box;
-            /* Fixes padding issues */
-        }
-
-        textarea {
-            resize: vertical;
-            min-height: 100px;
-            font-family: inherit;
-        }
-
-        button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
             cursor: pointer;
-            font-size: 1rem;
+            display: inline-block;
             width: 100%;
-            margin-top: 1rem;
-            transition: background 0.3s;
-        }
-
-        button:hover {
-            background-color: #2980b9;
-        }
-
-        button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-
-        /* Status Messages */
-        .status {
-            margin-top: 10px;
-            font-size: 0.9rem;
+            box-sizing: border-box;
             text-align: center;
         }
 
-        .success {
-            color: #27ae60;
+        .file-upload-label:hover {
+            background: rgba(51, 255, 0, 0.1);
         }
 
-        .error {
-            color: #e74c3c;
-        }
-
-        /* Result Box */
-        #finalResult {
-            background-color: #f8f9fa;
-            border-left: 5px solid #27ae60;
-            padding: 15px;
-            margin-top: 15px;
+        /* Hacker Textarea */
+        textarea {
+            width: 100%;
+            background: black;
+            color: var(--terminal-green);
+            border: 1px solid var(--terminal-green);
+            font-family: 'VT323', monospace;
             font-size: 1.2rem;
-            font-weight: bold;
+            padding: 10px;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: none;
+            box-shadow: var(--glow);
+        }
+
+        /* Retro Buttons */
+        button {
+            background: black;
+            color: var(--terminal-green);
+            border: 2px solid var(--terminal-green);
+            font-family: 'VT323', monospace;
+            font-size: 1.5rem;
+            padding: 10px 30px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 15px;
+            transition: 0.2s;
+            text-transform: uppercase;
+        }
+
+        button:hover:not(:disabled) {
+            background: var(--terminal-green);
+            color: black;
+            box-shadow: var(--glow);
+        }
+
+        button:disabled {
+            border-color: #555;
+            color: #555;
+            cursor: not-allowed;
+        }
+
+        /* Results Box */
+        #resultContainer {
+            margin-top: 2rem;
+            border-top: 2px solid var(--terminal-green);
+            padding-top: 1rem;
             display: none;
-            /* Hidden by default */
+        }
+
+        #finalResult {
+            font-size: 1.3rem;
+            white-space: pre-wrap;
+            line-height: 1.4;
+        }
+
+        .blink {
+            animation: blinker 1s linear infinite;
+        }
+
+        @keyframes blinker {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        /* Glitch text effect on hover */
+        h1:hover {
+            animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
+        }
+
+        @keyframes glitch {
+            0% {
+                transform: translate(0)
+            }
+
+            20% {
+                transform: translate(-2px, 2px)
+            }
+
+            40% {
+                transform: translate(-2px, -2px)
+            }
+
+            60% {
+                transform: translate(2px, 2px)
+            }
+
+            80% {
+                transform: translate(2px, -2px)
+            }
+
+            100% {
+                transform: translate(0)
+            }
         }
     </style>
 </head>
@@ -123,44 +200,56 @@
 <body>
 
     <div class="container">
-        <h1>AI Resume Analyzer</h1>
+        <h1>> AI_RESUME_ANALYZER <span class="blink">_</span></h1>
 
-        <div class="step">
-            <h3>Step 1: Upload Resume</h3>
-            <input type="file" id="resumeFile" accept=".pdf">
-            <button onclick="uploadResume()">Upload PDF</button>
-            <div id="uploadStatus" class="status"></div>
+        <div class="step active" id="step1">
+            <label>>> UPLOAD TARGET FILE (PDF)</label>
+            <label for="resumeFile" class="file-upload-label" id="fileLabel">[ CLICK TO SELECT DATA PACKET ]</label>
+            <input type="file" id="resumeFile" accept=".pdf" onchange="updateFileName()">
+            <button id="uploadBtn" onclick="uploadResume()">INITIATE UPLOAD</button>
+            <div id="uploadStatus" style="margin-top: 10px;"></div>
         </div>
 
-        <div class="step">
-            <h3>Step 2: Job Description</h3>
-            <textarea id="jobDesc" placeholder="Paste the Job Description text here..."></textarea>
-            <button id="analyzeBtn" onclick="analyzeResume()" disabled>Analyze Match</button>
+        <div class="step" id="step2">
+            <label>>> INPUT JOB PARAMETERS</label>
+            <textarea id="jobDesc" rows="5" placeholder="// PASTE JOB DESCRIPTION HERE..."></textarea>
+            <button id="analyzeBtn" onclick="analyzeResume()" disabled>EXECUTE ANALYSIS</button>
+        </div>
 
+        <div id="resultContainer">
             <div id="finalResult"></div>
         </div>
     </div>
 
     <script>
-        // Variable to store the ID of the uploaded resume
         let currentResumeId = null;
+
+        function updateFileName() {
+            const fileInput = document.getElementById('resumeFile');
+            const label = document.getElementById('fileLabel');
+            if (fileInput.files.length > 0) {
+                label.innerText = "[ SELECTED: " + fileInput.files[0].name.toUpperCase() + " ]";
+            }
+        }
 
         async function uploadResume() {
             const fileInput = document.getElementById('resumeFile');
             const statusDiv = document.getElementById('uploadStatus');
+            const btn = document.getElementById('uploadBtn');
 
             if (!fileInput.files[0]) {
-                statusDiv.innerHTML = '<span class="error">Please select a file first!</span>';
+                statusDiv.innerText = "ERROR: NO DATA PACKET DETECTED.";
+                statusDiv.style.color = "red";
                 return;
             }
+
+            btn.innerText = "UPLOADING...";
+            btn.disabled = true;
 
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
 
-            statusDiv.innerHTML = 'Uploading...';
-
             try {
-                // Hardcoded User ID 1 for MVP
                 const response = await fetch('/api/resume/upload/1', {
                     method: 'POST',
                     body: formData
@@ -168,61 +257,83 @@
 
                 if (response.ok) {
                     const text = await response.text();
-                    // Extract ID from message "Resume uploaded successfully! ID: 5"
                     const idMatch = text.match(/ID:\s*(\d+)/);
 
                     if (idMatch) {
                         currentResumeId = idMatch[1];
-                        statusDiv.innerHTML = `<span class="success">Uploaded! Resume ID: ${currentResumeId}</span>`;
+                        statusDiv.innerHTML = `> UPLOAD COMPLETE. TARGET ID: ${currentResumeId}`;
+                        statusDiv.style.color = "var(--terminal-green)";
 
-                        // Enable the Analyze button now that we have an ID
-                        document.getElementById('analyzeBtn').disabled = false;
-                        document.getElementById('analyzeBtn').innerText = "Analyze Match";
-                    } else {
-                        statusDiv.innerHTML = '<span class="success">Uploaded, but could not read ID. Using default (1).</span>';
-                        currentResumeId = 1;
+                        // Activate Step 2
+                        document.getElementById('step1').classList.remove('active');
+                        document.getElementById('step2').classList.add('active');
                         document.getElementById('analyzeBtn').disabled = false;
                     }
                 } else {
-                    statusDiv.innerHTML = `<span class="error">Error: ${response.statusText}</span>`;
+                    statusDiv.innerText = "ERROR: SERVER REJECTED DATA.";
                 }
             } catch (error) {
-                console.error(error);
-                statusDiv.innerHTML = '<span class="error">Failed to connect to server.</span>';
+                statusDiv.innerText = "CRITICAL FAILURE: CONNECTION LOST.";
             }
         }
 
         async function analyzeResume() {
             const jdText = document.getElementById('jobDesc').value;
+            const resultContainer = document.getElementById('resultContainer');
             const resultDiv = document.getElementById('finalResult');
+            const btn = document.getElementById('analyzeBtn');
 
             if (!jdText.trim()) {
-                alert("Please paste a Job Description first.");
+                alert("ERROR: INPUT PARAMETERS EMPTY.");
                 return;
             }
 
-            resultDiv.style.display = 'block';
-            resultDiv.innerText = "Calculating AI Score...";
+            btn.disabled = true;
+            btn.innerText = "PROCESSING...";
+            resultContainer.style.display = "block";
+            resultDiv.innerText = "";
 
-            try {
-                const response = await fetch(`/api/resume/analyze/${currentResumeId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'text/plain' // Sending raw text string
-                    },
-                    body: jdText
-                });
+            // Typing effect initialization
+            typeWriter("> ESTABLISHING NEURAL LINK...\n> COMPARING VECTORS...\n", resultDiv, async () => {
 
-                if (response.ok) {
-                    const resultText = await response.text();
-                    resultDiv.innerText = resultText; // e.g., "Analysis Complete! Match Score: 85.00%"
-                } else {
-                    resultDiv.innerText = "Error analyzing resume.";
+                try {
+                    const response = await fetch(`/api/resume/analyze/${currentResumeId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: jdText
+                    });
+
+                    if (response.ok) {
+                        const resultText = await response.text();
+                        // Clear and type the actual result
+                        resultDiv.innerText = "";
+                        typeWriter(resultText, resultDiv);
+                    } else {
+                        resultDiv.innerText = "ANALYSIS FAILED.";
+                    }
+                } catch (error) {
+                    resultDiv.innerText = "SYSTEM ERROR.";
+                } finally {
+                    btn.innerText = "EXECUTE ANALYSIS";
+                    btn.disabled = false;
                 }
-            } catch (error) {
-                console.error(error);
-                resultDiv.innerText = "Server Error.";
+            });
+        }
+
+        // Typing Animation Function
+        function typeWriter(text, element, callback) {
+            let i = 0;
+            element.innerHTML = "";
+            function type() {
+                if (i < text.length) {
+                    element.innerHTML += text.charAt(i);
+                    i++;
+                    setTimeout(type, 10); // Typing speed
+                } else if (callback) {
+                    callback();
+                }
             }
+            type();
         }
     </script>
 

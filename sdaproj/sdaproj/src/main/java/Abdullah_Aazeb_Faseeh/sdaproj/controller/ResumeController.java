@@ -44,10 +44,18 @@ public class ResumeController {
         try {
             AnalysisReport result = aiService.analyzeResume(resumeId, jobDescription);
 
-            return ResponseEntity.ok(
-                    String.format("Analysis Complete! Match Score: %.2f%%", result.getMatchScore()));
+            // Format the output to look like a system log
+            String response = String.format(
+                    "SYSTEM ANALYSIS REPORT\n" +
+                            "----------------------\n" +
+                            "COMPATIBILITY SCORE : %.2f%%\n" +
+                            "AI FEEDBACK         : %s",
+                    result.getMatchScore(),
+                    result.getFeedback());
+
+            return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
-            return ResponseEntity.status(404).body("Error: " + e.getMessage());
+            return ResponseEntity.status(404).body("ERROR: " + e.getMessage());
         }
     }
 }
