@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Analyzer</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            background-color: white;
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .step {
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .step:last-child {
+            border-bottom: none;
+        }
+
+        h3 {
+            margin-top: 0;
+            color: #34495e;
+        }
+
+        /* Form Elements */
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+
+        input[type="file"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            /* Fixes padding issues */
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-family: inherit;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            width: 100%;
+            margin-top: 1rem;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Status Messages */
+        .status {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .success {
+            color: #27ae60;
+        }
+
+        .error {
+            color: #e74c3c;
+        }
+
+        /* Result Box */
+        #finalResult {
+            background-color: #f8f9fa;
+            border-left: 5px solid #27ae60;
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            display: none;
+            /* Hidden by default */
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>AI Resume Analyzer</h1>
+
+        <div class="step">
+            <h3>Step 1: Upload Resume</h3>
+            <input type="file" id="resumeFile" accept=".pdf">
+            <button onclick="uploadResume()">Upload PDF</button>
+            <div id="uploadStatus" class="status"></div>
+        </div>
+
+        <div class="step">
+            <h3>Step 2: Job Description</h3>
+            <textarea id="jobDesc" placeholder="Paste the Job Description text here..."></textarea>
+            <button id="analyzeBtn" onclick="analyzeResume()" disabled>Analyze Match</button>
+
+            <div id="finalResult"></div>
+        </div>
+    </div>
+
+    <script>
+        // Variable to store the ID of the uploaded resume
+        let currentResumeId = null;
+
+        async function uploadResume() {
+            const fileInput = document.getElementById('resumeFile');
+            const statusDiv = document.getElementById('uploadStatus');
+
+            if (!fileInput.files[0]) {
+                statusDiv.innerHTML = '<span class="error">Please select a file first!</span>';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            statusDiv.innerHTML = 'Uploading...';
+
+            try {
+                // Hardcoded User ID 1 for MVP
+                const response = await fetch('/api/resume/upload/1', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const text = await response.text();
+                    // Extract ID from message "Resume uploaded successfully! ID: 5"
+                    const idMatch = text.match(/ID:\s*(\d+)/);
+
+                    if (idMatch) {
+                        currentResumeId = idMatch[1];
+                        statusDiv.innerHTML = `<span class="success">Uploaded! Resume ID: ${currentResumeId}</span>`;
+
+                        // Enable the Analyze button now that we have an ID
+                        document.getElementById('analyzeBtn').disabled = false;
+                        document.getElementById('analyzeBtn').innerText = "Analyze Match";
+                    } else {
+                        statusDiv.innerHTML = '<span class="success">Uploaded, but could not read ID. Using default (1).</span>';
+                        currentResumeId = 1;
+                        document.getElementById('analyzeBtn').disabled = false;
+                    }
+                } else {
+                    statusDiv.innerHTML = `<span class="error">Error: ${response.statusText}</span>`;
+                }
+            } catch (error) {
+                console.error(error);
+                statusDiv.innerHTML = '<span class="error">Failed to connect to server.</span>';
+            }
+        }
+
+        async function analyzeResume() {
+            const jdText = document.getElementById('jobDesc').value;
+            const resultDiv = document.getElementById('finalResult');
+
+            if (!jdText.trim()) {
+                alert("Please paste a Job Description first.");
+                return;
+            }
+
+            resultDiv.style.display = 'block';
+            resultDiv.innerText = "Calculating AI Score...";
+
+            try {
+                const response = await fetch(`/api/resume/analyze/${currentResumeId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain' // Sending raw text string
+                    },
+                    body: jdText
+                });
+
+                if (response.ok) {
+                    const resultText = await response.text();
+                    resultDiv.innerText = resultText; // e.g., "Analysis Complete! Match Score: 85.00%"
+                } else {
+                    resultDiv.innerText = "Error analyzing resume.";
+                }
+            } catch (error) {
+                console.error(error);
+                resultDiv.innerText = "Server Error.";
+            }
+        }
+    </script>
+
+</body>
+
+</html>
