@@ -70,6 +70,7 @@ public class ResumeController {
     private String extractTextFromPdf(MultipartFile file) throws IOException {
         try (PDDocument document = PDDocument.load(file.getInputStream())) {
             PDFTextStripper pdfStripper = new PDFTextStripper();
+            pdfStripper.setSortByPosition(true);
             return pdfStripper.getText(document);
         }
     }
