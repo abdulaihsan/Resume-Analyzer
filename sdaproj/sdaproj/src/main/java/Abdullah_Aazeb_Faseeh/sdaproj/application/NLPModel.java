@@ -1,60 +1,52 @@
 package Abdullah_Aazeb_Faseeh.sdaproj.application;
 
-import Abdullah_Aazeb_Faseeh.sdaproj.persistence.ReportRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.http.*;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.*;
 
 @Service
 public class NLPModel {
 
-    private final ReportRepository resumeRepository;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
     @Value("${google.ai.api-key}")
     private String apiKey;
 
-    // UPDATED URL: Using 'gemini-1.5-flash-latest' which is more stable.
-    // If this fails, try 'gemini-pro' or 'gemini-2.0-flash'
+    // Using 1.5-flash as the stable default. You can change this to
+    // 'gemini-2.0-flash' if available.
     private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=";
 
-    public NLPModel(ReportRepository resumeRepository) {
-        this.resumeRepository = resumeRepository;
+    public NLPModel() {
         this.restTemplate = new RestTemplate();
         this.objectMapper = new ObjectMapper();
     }
 
-    public AnalysisReport analyzeResume(long resumeId, String jobDescription) {
-        // 1. Fetch Resume Text
-        Resume resume = resumeRepository.findById(resumeId)
-                .orElseThrow(() -> new RuntimeException("Resume not found"));
+    // A simple record to hold the AI's raw answer
+    public record AIResult(double score, String feedback, List<String> missingSkills) {
+    }
 
-        String resumeText = (resume.getExtractedText() != null) ? resume.getExtractedText() : "";
-
-        // 2. Call Google Gemini API
+    /**
+     * Analyzes text using Google Gemini.
+     * Pure logic, no database access.
+     */
+    public AIResult analyze(String resumeText, String jobDescription) {
         try {
-            GeminiResponse analysis = callGeminiAPI(resumeText, jobDescription);
-
-            // 3. Construct Final Feedback String
-            String formattedFeedback = formatFeedback(analysis);
-
-            return new AnalysisReport(analysis.score, formattedFeedback, resume);
-
+            return callGeminiAPI(resumeText, jobDescription);
         } catch (Exception e) {
             e.printStackTrace();
-            // Return a friendly error report instead of crashing
-            return new AnalysisReport(0, "AI Service Error: " + e.getMessage(), resume);
+            return new AIResult(0.0, "AI Connection Failed: " + e.getMessage(), Collections.emptyList());
         }
     }
 
-    private GeminiResponse callGeminiAPI(String resumeText, String jobDesc) throws Exception {
-        // A. Construct the Prompt (Asking for JSON)
+    private AIResult callGeminiAPI(String resumeText, String jobDesc) throws Exception {
+        // 1. Construct the Prompt
         String prompt = String.format(
                 "Act as an expert Technical Recruiter. Compare this Resume against the Job Description.\n\n" +
                         "RESUME:\n%s\n\n" +
@@ -67,7 +59,8 @@ public class NLPModel {
                 limitText(resumeText, 8000),
                 limitText(jobDesc, 2000));
 
-        // B. Build JSON Payload
+        // 2. Build Google Gemini JSON Payload
+        // Structure: { "contents": [ { "parts": [ { "text": "..." } ] } ] }
         Map<String, Object> textPart = new HashMap<>();
         textPart.put("text", prompt);
 
@@ -77,7 +70,7 @@ public class NLPModel {
         Map<String, Object> payload = new HashMap<>();
         payload.put("contents", Collections.singletonList(parts));
 
-        // C. Send Request
+        // 3. Send Request
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
@@ -87,27 +80,27 @@ public class NLPModel {
         try {
             ResponseEntity<String> response = restTemplate.postForEntity(fullUrl, request, String.class);
             return parseGeminiResponse(response.getBody());
-        } catch (org.springframework.web.client.HttpClientErrorException e) {
-            // Log the specific Google API error (e.g., 404 or 400)
+        } catch (HttpClientErrorException e) {
             throw new Exception("Google API Error: " + e.getResponseBodyAsString());
         }
     }
 
-    private GeminiResponse parseGeminiResponse(String jsonResponse) throws Exception {
+    private AIResult parseGeminiResponse(String jsonResponse) throws Exception {
         JsonNode root = objectMapper.readTree(jsonResponse);
 
-        // Safety check for empty response
         if (!root.has("candidates") || root.path("candidates").isEmpty()) {
-            throw new Exception("AI returned no candidates. It might have blocked the content.");
+            throw new Exception("Blocked by Safety Filters or No Response.");
         }
 
+        // Navigate to the text
         String rawText = root.path("candidates").get(0)
                 .path("content").path("parts").get(0)
                 .path("text").asText();
 
-        // Clean up markdown code blocks if present
+        // Clean Markdown (```json ... ```)
         rawText = rawText.replaceAll("```json", "").replaceAll("```", "").trim();
 
+        // Parse inner JSON
         JsonNode innerJson = objectMapper.readTree(rawText);
 
         double score = innerJson.path("score").asDouble();
@@ -118,45 +111,12 @@ public class NLPModel {
             innerJson.path("missing_skills").forEach(node -> missing.add(node.asText()));
         }
 
-        return new GeminiResponse(score, feedback, missing);
-    }
-
-    private String formatFeedback(GeminiResponse response) {
-        StringBuilder sb = new StringBuilder();
-
-        if (response.score > 85)
-            sb.append("🚀 EXCELLENT MATCH\n");
-        else if (response.score > 60)
-            sb.append("✅ GOOD MATCH\n");
-        else
-            sb.append("⚠️ LOW MATCH\n");
-
-        sb.append(response.feedback).append("\n\n");
-
-        if (!response.missingSkills.isEmpty()) {
-            sb.append("MISSING SKILLS:\n");
-            for (String skill : response.missingSkills) {
-                sb.append("• ").append(skill.toUpperCase()).append("\n");
-            }
-        }
-        return sb.toString();
+        return new AIResult(score, feedback, missing);
     }
 
     private String limitText(String text, int maxLength) {
         if (text == null)
             return "";
         return text.length() > maxLength ? text.substring(0, maxLength) : text;
-    }
-
-    private static class GeminiResponse {
-        double score;
-        String feedback;
-        List<String> missingSkills;
-
-        public GeminiResponse(double score, String feedback, List<String> missingSkills) {
-            this.score = score;
-            this.feedback = feedback;
-            this.missingSkills = missingSkills;
-        }
     }
 }

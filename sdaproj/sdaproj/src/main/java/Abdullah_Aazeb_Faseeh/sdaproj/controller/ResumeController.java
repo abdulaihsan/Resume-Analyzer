@@ -1,10 +1,9 @@
 package Abdullah_Aazeb_Faseeh.sdaproj.controller;
 
-import Abdullah_Aazeb_Faseeh.sdaproj.application.AnalysisReport;
-import Abdullah_Aazeb_Faseeh.sdaproj.application.AnalysisService;
-import Abdullah_Aazeb_Faseeh.sdaproj.application.NLPModel;
-import Abdullah_Aazeb_Faseeh.sdaproj.application.Resume;
-
+import Abdullah_Aazeb_Faseeh.sdaproj.application.*;
+import Abdullah_Aazeb_Faseeh.sdaproj.persistence.*;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -15,47 +14,68 @@ import java.io.IOException;
 @RequestMapping("/api/resume")
 public class ResumeController {
 
-    private final AnalysisService resumeService;
-    private final NLPModel aiService; // Inject the new AI Brain
+    private final AnalysisService analysisService; // New Service
+    private final ResumeRepository resumeRepository;
+    private final UserRepository userRepository;
 
-    // Constructor Injection for both Services
-    public ResumeController(AnalysisService resumeService, NLPModel aiService) {
-        this.resumeService = resumeService;
-        this.aiService = aiService;
+    // Constructor Injection
+    public ResumeController(AnalysisService analysisService,
+            ResumeRepository resumeRepository,
+            UserRepository userRepository) {
+        this.analysisService = analysisService;
+        this.resumeRepository = resumeRepository;
+        this.userRepository = userRepository;
     }
 
+    // 1. UPLOAD RESUME
     @PostMapping("/upload/{userId}")
-    public ResponseEntity<String> uploadResume(@RequestParam("file") MultipartFile file,
-            @PathVariable Long userId) {
+    public ResponseEntity<?> uploadResume(@RequestParam("file") MultipartFile file,
+            @PathVariable long userId) {
         try {
-            Resume savedResume = resumeService.storeResume(file, userId);
-            // We return a simple string so the frontend can easily verify success
-            return ResponseEntity.ok("Resume uploaded successfully! ID: " + savedResume.getId());
+            // Verify User exists and is a Candidate
+            User candidate = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            if (!"CANDIDATE".equalsIgnoreCase(candidate.getRole())) {
+                return ResponseEntity.status(403).body("Only candidates can upload resumes.");
+            }
+
+            // Extract Text from PDF
+            String extractedText = extractTextFromPdf(file);
+
+            // Create and Save Resume
+            Resume resume = new Resume(file.getOriginalFilename(), extractedText, candidate);
+            resumeRepository.save(resume);
+
+            return ResponseEntity.ok("Resume uploaded successfully! ID: " + resume.getId());
+
         } catch (IOException e) {
-            return ResponseEntity.status(500).body("Error processing file: " + e.getMessage());
+            return ResponseEntity.internalServerError().body("Error processing PDF: " + e.getMessage());
         } catch (RuntimeException e) {
             return ResponseEntity.status(404).body("Error: " + e.getMessage());
         }
     }
 
-    @PostMapping("/analyze/{resumeId}")
-    public ResponseEntity<String> analyzeResume(@PathVariable Long resumeId,
-            @RequestBody String jobDescription) {
+    // 2. APPLY FOR JOB (Updated to use AnalysisService)
+    @PostMapping("/apply/{jobId}/{resumeId}")
+    public ResponseEntity<?> applyForJob(@PathVariable Long jobId, @PathVariable Long resumeId) {
         try {
-            AnalysisReport result = aiService.analyzeResume(resumeId, jobDescription);
+            // The AnalysisService now handles fetching entities, calling AI, formatting,
+            // and saving.
+            AnalysisReport report = analysisService.performAnalysis(jobId, resumeId);
 
-            // Format the output to look like a system log
-            String response = String.format(
-                    "SYSTEM ANALYSIS REPORT\n" +
-                            "----------------------\n" +
-                            "COMPATIBILITY SCORE : %.2f%%\n" +
-                            "AI FEEDBACK         : %s",
-                    result.getMatchScore(),
-                    result.getFeedback());
+            return ResponseEntity.ok(report);
 
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(404).body("ERROR: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Application failed: " + e.getMessage());
+        }
+    }
+
+    // Helper Method
+    private String extractTextFromPdf(MultipartFile file) throws IOException {
+        try (PDDocument document = PDDocument.load(file.getInputStream())) {
+            PDFTextStripper pdfStripper = new PDFTextStripper();
+            return pdfStripper.getText(document);
         }
     }
 }
