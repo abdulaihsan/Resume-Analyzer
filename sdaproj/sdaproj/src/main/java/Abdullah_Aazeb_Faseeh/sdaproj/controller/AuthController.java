@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Optional;
 
 // DESIGN PATTERN: Controller (MVC)
-// This class acts as the Controller in the MVC architecture, handling HTTP requests and delegating business logic.
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -16,15 +15,11 @@ public class AuthController {
     private final UserRepository userRepository;
 
     // DESIGN PATTERN: Dependency Injection
-    // Dependencies are injected via constructor, promoting loose coupling and
-    // testability.
     public AuthController(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
     // DESIGN PATTERN: Data Transfer Object (DTO)
-    // Records are used here as DTOs to encapsulate data transferred between the
-    // client and server.
     public record LoginRequest(String username, String password) {
     }
 

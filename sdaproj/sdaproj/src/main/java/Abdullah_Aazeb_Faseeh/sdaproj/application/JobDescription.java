@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 // DESIGN PATTERN: Entity (Domain Model)
-// Represents a persistent domain object managed by JPA.
 @Entity
 @Table(name = "job_descriptions")
 public class JobDescription {
@@ -35,7 +34,6 @@ public class JobDescription {
     }
 
     // DESIGN PATTERN: Encapsulation
-    // Fields are private and accessed via public getters.
     public Long getId() {
         return id;
     }

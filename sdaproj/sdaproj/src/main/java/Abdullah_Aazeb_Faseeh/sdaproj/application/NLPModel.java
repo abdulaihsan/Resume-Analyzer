@@ -11,7 +11,6 @@ import org.springframework.web.client.HttpClientErrorException;
 import java.util.*;
 
 // DESIGN PATTERN: Adapter / Gateway
-// Acts as an adapter to the external Google Gemini API, providing a domain-specific interface (analyze).
 @Service
 public class NLPModel {
 
@@ -29,7 +28,6 @@ public class NLPModel {
     }
 
     // DESIGN PATTERN: Data Transfer Object (DTO)
-    // Immutable record to carry analysis results.
     public record AIResult(double score, String feedback, List<String> missingSkills) {
     }
 

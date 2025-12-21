@@ -8,7 +8,5 @@ import java.util.List;
 public interface ReportRepository extends JpaRepository<AnalysisReport, Long> {
 
     // DESIGN PATTERN: Derived Query Method
-    // Spring Data JPA automatically generates the query based on the method name
-    // logic.
     List<AnalysisReport> findByJobIdOrderByMatchScoreDesc(Long jobId);
 }

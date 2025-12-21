@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 // DESIGN PATTERN: Service Layer
-// Encapsulates business logic, coordinating between repositories and external services (NLP).
 @Service
 public class AnalysisService {
 
@@ -17,8 +16,6 @@ public class AnalysisService {
     private final ReportRepository reportRepository;
 
     // DESIGN PATTERN: Facade
-    // Provides a simplified interface (performAnalysis) to a complex subsystem (AI
-    // analysis + DB operations).
     public AnalysisService(NLPModel nlpModel,
             ResumeRepository resumeRepository,
             JobRepository jobRepository,
@@ -30,8 +27,6 @@ public class AnalysisService {
     }
 
     // DESIGN PATTERN: Proxy (Transaction Management)
-    // Spring uses AOP proxies to manage the transaction boundary around this
-    // method.
     @Transactional
     public AnalysisReport performAnalysis(long jobId, long resumeId) {
         JobDescription job = jobRepository.findById(jobId)

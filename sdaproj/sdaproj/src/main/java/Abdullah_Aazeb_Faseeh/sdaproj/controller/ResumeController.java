@@ -40,7 +40,6 @@ public class ResumeController {
             }
 
             // DESIGN PATTERN: Helper Method (Encapsulation)
-            // Extract logic to a private method to keep the controller clean.
             String extractedText = extractTextFromPdf(file);
 
             Resume resume = new Resume(file.getOriginalFilename(), extractedText, candidate);
@@ -59,8 +58,6 @@ public class ResumeController {
     public ResponseEntity<?> applyForJob(@PathVariable Long jobId, @PathVariable Long resumeId) {
         try {
             // DESIGN PATTERN: Facade
-            // AnalysisService acts as a facade, hiding the complexity of AI analysis and
-            // database operations.
             AnalysisReport report = analysisService.performAnalysis(jobId, resumeId);
 
             return ResponseEntity.ok(report);
