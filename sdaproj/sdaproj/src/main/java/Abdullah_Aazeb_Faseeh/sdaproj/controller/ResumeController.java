@@ -10,15 +10,16 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 
+// DESIGN PATTERN: Controller (MVC)
 @RestController
 @RequestMapping("/api/resume")
 public class ResumeController {
 
-    private final AnalysisService analysisService; // New Service
+    private final AnalysisService analysisService;
     private final ResumeRepository resumeRepository;
     private final UserRepository userRepository;
 
-    // Constructor Injection
+    // DESIGN PATTERN: Dependency Injection
     public ResumeController(AnalysisService analysisService,
             ResumeRepository resumeRepository,
             UserRepository userRepository) {
@@ -27,12 +28,10 @@ public class ResumeController {
         this.userRepository = userRepository;
     }
 
-    // 1. UPLOAD RESUME
     @PostMapping("/upload/{userId}")
     public ResponseEntity<?> uploadResume(@RequestParam("file") MultipartFile file,
             @PathVariable long userId) {
         try {
-            // Verify User exists and is a Candidate
             User candidate = userRepository.findById(userId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -40,10 +39,10 @@ public class ResumeController {
                 return ResponseEntity.status(403).body("Only candidates can upload resumes.");
             }
 
-            // Extract Text from PDF
+            // DESIGN PATTERN: Helper Method (Encapsulation)
+            // Extract logic to a private method to keep the controller clean.
             String extractedText = extractTextFromPdf(file);
 
-            // Create and Save Resume
             Resume resume = new Resume(file.getOriginalFilename(), extractedText, candidate);
             resumeRepository.save(resume);
 
@@ -56,12 +55,12 @@ public class ResumeController {
         }
     }
 
-    // 2. APPLY FOR JOB (Updated to use AnalysisService)
     @PostMapping("/apply/{jobId}/{resumeId}")
     public ResponseEntity<?> applyForJob(@PathVariable Long jobId, @PathVariable Long resumeId) {
         try {
-            // The AnalysisService now handles fetching entities, calling AI, formatting,
-            // and saving.
+            // DESIGN PATTERN: Facade
+            // AnalysisService acts as a facade, hiding the complexity of AI analysis and
+            // database operations.
             AnalysisReport report = analysisService.performAnalysis(jobId, resumeId);
 
             return ResponseEntity.ok(report);
@@ -71,7 +70,6 @@ public class ResumeController {
         }
     }
 
-    // Helper Method
     private String extractTextFromPdf(MultipartFile file) throws IOException {
         try (PDDocument document = PDDocument.load(file.getInputStream())) {
             PDFTextStripper pdfStripper = new PDFTextStripper();

@@ -3,6 +3,8 @@ package Abdullah_Aazeb_Faseeh.sdaproj.application;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
+// DESIGN PATTERN: Entity (Domain Model)
+// Represents a persistent domain object managed by JPA.
 @Entity
 @Table(name = "job_descriptions")
 public class JobDescription {
@@ -17,6 +19,7 @@ public class JobDescription {
     private String content;
     private LocalDateTime postedAt;
 
+    // DESIGN PATTERN: Association (Many-to-One)
     @ManyToOne
     @JoinColumn(name = "recruiter_id")
     private User recruiter;
@@ -31,7 +34,8 @@ public class JobDescription {
         this.postedAt = LocalDateTime.now();
     }
 
-    // Getters
+    // DESIGN PATTERN: Encapsulation
+    // Fields are private and accessed via public getters.
     public Long getId() {
         return id;
     }

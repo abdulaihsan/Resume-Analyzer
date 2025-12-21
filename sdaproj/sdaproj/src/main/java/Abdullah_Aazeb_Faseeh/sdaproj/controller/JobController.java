@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+// DESIGN PATTERN: Controller (MVC)
+// Handles incoming REST requests for Job-related operations.
 @RestController
 @RequestMapping("/api/jobs")
 public class JobController {
@@ -15,6 +17,9 @@ public class JobController {
     private final UserRepository userRepository;
     private final ReportRepository reportRepository;
 
+    // DESIGN PATTERN: Dependency Injection
+    // Constructor-based injection ensures that required dependencies are provided
+    // at instantiation.
     public JobController(JobRepository jobRepository, UserRepository userRepository,
             ReportRepository reportRepository) {
         this.jobRepository = jobRepository;
@@ -22,7 +27,6 @@ public class JobController {
         this.reportRepository = reportRepository;
     }
 
-    // 1. Recruiter Posts a Job
     @PostMapping("/post/{recruiterId}")
     public ResponseEntity<?> postJob(@PathVariable long recruiterId, @RequestBody JobDescription job) {
         User recruiter = userRepository.findById(recruiterId)

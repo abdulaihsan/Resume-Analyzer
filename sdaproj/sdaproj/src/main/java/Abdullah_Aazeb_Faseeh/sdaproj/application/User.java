@@ -1,7 +1,10 @@
 package Abdullah_Aazeb_Faseeh.sdaproj.application;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 
+// DESIGN PATTERN: Entity (Domain Model)
 @Entity
 @Table(name = "users")
 public class User {
@@ -14,6 +17,7 @@ public class User {
     private String username;
 
     @Column(nullable = false)
+    @JsonIgnore
     private String password;
 
     @Column(nullable = false)
@@ -21,7 +25,6 @@ public class User {
 
     private String email;
 
-    // Constructors
     public User() {
     }
 
@@ -32,7 +35,7 @@ public class User {
         this.email = email;
     }
 
-    // Getters
+    // DESIGN PATTERN: Encapsulation
     public Long getId() {
         return id;
     }

@@ -1,7 +1,10 @@
 package Abdullah_Aazeb_Faseeh.sdaproj.application;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 
+// DESIGN PATTERN: Entity (Domain Model)
 @Entity
 @Table(name = "resumes")
 public class Resume {
@@ -12,10 +15,11 @@ public class Resume {
 
     private String fileName;
 
-    @Lob
     @Column(columnDefinition = "TEXT")
+    @JsonIgnore
     private String extractedText;
 
+    // DESIGN PATTERN: Association
     @ManyToOne
     @JoinColumn(name = "candidate_id")
     private User candidate;
@@ -29,6 +33,7 @@ public class Resume {
         this.candidate = candidate;
     }
 
+    // DESIGN PATTERN: Encapsulation
     public Long getId() {
         return id;
     }

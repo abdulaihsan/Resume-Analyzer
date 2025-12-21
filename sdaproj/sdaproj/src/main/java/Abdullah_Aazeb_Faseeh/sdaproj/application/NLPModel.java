@@ -10,6 +10,8 @@ import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.*;
 
+// DESIGN PATTERN: Adapter / Gateway
+// Acts as an adapter to the external Google Gemini API, providing a domain-specific interface (analyze).
 @Service
 public class NLPModel {
 
@@ -19,8 +21,6 @@ public class NLPModel {
     @Value("${google.ai.api-key}")
     private String apiKey;
 
-    // Using 1.5-flash as the stable default. You can change this to
-    // 'gemini-2.0-flash' if available.
     private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=";
 
     public NLPModel() {
@@ -28,14 +28,11 @@ public class NLPModel {
         this.objectMapper = new ObjectMapper();
     }
 
-    // A simple record to hold the AI's raw answer
+    // DESIGN PATTERN: Data Transfer Object (DTO)
+    // Immutable record to carry analysis results.
     public record AIResult(double score, String feedback, List<String> missingSkills) {
     }
 
-    /**
-     * Analyzes text using Google Gemini.
-     * Pure logic, no database access.
-     */
     public AIResult analyze(String resumeText, String jobDescription) {
         try {
             return callGeminiAPI(resumeText, jobDescription);
@@ -46,7 +43,6 @@ public class NLPModel {
     }
 
     private AIResult callGeminiAPI(String resumeText, String jobDesc) throws Exception {
-        // 1. Construct the Prompt
         String prompt = String.format(
                 "Act as an expert Technical Recruiter. Compare this Resume against the Job Description.\n\n" +
                         "RESUME:\n%s\n\n" +
@@ -59,8 +55,6 @@ public class NLPModel {
                 limitText(resumeText, 8000),
                 limitText(jobDesc, 2000));
 
-        // 2. Build Google Gemini JSON Payload
-        // Structure: { "contents": [ { "parts": [ { "text": "..." } ] } ] }
         Map<String, Object> textPart = new HashMap<>();
         textPart.put("text", prompt);
 
@@ -70,7 +64,6 @@ public class NLPModel {
         Map<String, Object> payload = new HashMap<>();
         payload.put("contents", Collections.singletonList(parts));
 
-        // 3. Send Request
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
@@ -92,15 +85,12 @@ public class NLPModel {
             throw new Exception("Blocked by Safety Filters or No Response.");
         }
 
-        // Navigate to the text
         String rawText = root.path("candidates").get(0)
                 .path("content").path("parts").get(0)
                 .path("text").asText();
 
-        // Clean Markdown (```json ... ```)
         rawText = rawText.replaceAll("```json", "").replaceAll("```", "").trim();
 
-        // Parse inner JSON
         JsonNode innerJson = objectMapper.readTree(rawText);
 
         double score = innerJson.path("score").asDouble();
