@@ -18,7 +18,7 @@ public class NLPModel {
   private final RestTemplate restTemplate;
   private final ObjectMapper objectMapper;
 
-  @Value("${google.ai.api-key}")
+  @Value("${google.ai.api-key:missing}")
   private String apiKey;
 
   private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=";
